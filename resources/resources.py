@@ -1,14 +1,13 @@
 import pickle
 import logging
 
-# from luigi import LocalTarget
 import pandas as pd
 
 
 logger = logging.getLogger(__name__)
 
 
-class PickleTarget(object):
+class Pickle(object):
     def __init__(self, path, **kwargs):
         self._path = path
 
@@ -22,7 +21,7 @@ class PickleTarget(object):
             pickle.dump(df, f)
 
 
-class CSVTarget(object):
+class CSV(object):
     def __init__(self, path, **kwargs):
         self._path = path
         self._kwargs = kwargs
@@ -39,7 +38,7 @@ class CSVTarget(object):
         df.to_csv(self._path, index=False, **self._kwargs)
 
 
-class ShapefileTarget(object):
+class Shapefile(object):
     def __init__(self, path, **kwargs):
         self._path = path
         self._kwargs = kwargs
@@ -56,6 +55,6 @@ class ShapefileTarget(object):
         df.to_file(self._path, **self._kwargs)
 
 
-class BcolzTarget(object):
+class Bcolz(object):
     pass
 

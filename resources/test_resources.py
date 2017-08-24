@@ -7,7 +7,7 @@ import pandas as pd
 import geopandas as gpd
 import shapely
 
-from targets import CSVTarget, ShapefileTarget, BcolzTarget, PickleTarget as Target
+from resources import CSV, Shapefile, Bcolz, Pickle as Resource
 
 
 @pytest.fixture
@@ -44,45 +44,45 @@ def _compare_dfs(df1, df2, eps=1e-12):
             assert (df1[c] == df2[c]).all()
 
 
-def test_target_save_load(df, tmpfile):
-    target = Target(tmpfile)
-    target.save(df)
-    loaded_df = target.load()
+def test_resource_save_load(df, tmpfile):
+    resource = Resource(tmpfile)
+    resource.save(df)
+    loaded_df = resource.load()
 
     assert (df == loaded_df).values.all()
 
 
-def test_target_one_saves_another_loads(df, tmpfile):
-    one = Target(tmpfile)
-    another = Target(tmpfile)
+def test_resource_one_saves_another_loads(df, tmpfile):
+    one = Resource(tmpfile)
+    another = Resource(tmpfile)
     one.save(df)
     loaded_df = another.load()
 
     assert (df == loaded_df).values.all()
 
 
-def test_csvtarget_saves_pandas_loads(df, tmpfile):
-    target = CSVTarget(tmpfile)
-    target.save(df)
+def test_csvresource_saves_pandas_loads(df, tmpfile):
+    resource = CSV(tmpfile)
+    resource.save(df)
     loaded_df = pd.read_csv(tmpfile)
 
     _compare_dfs(df, loaded_df)
 
 
-def test_pandas_saves_csvtarget_loads(df, tmpfile):
+def test_pandas_saves_csvresource_loads(df, tmpfile):
     kwargs = dict(sep=';', encoding='cp1251')
-    target = CSVTarget(tmpfile, **kwargs)
+    resource = CSV(tmpfile, **kwargs)
     df.to_csv(tmpfile, **kwargs, index=False)
-    loaded_df = target.load()
+    loaded_df = resource.load()
 
     _compare_dfs(df, loaded_df)
 
 
-def test_shapefiletarget_saves_geopandas_loads(df, points, tmpfile):
+def test_shapefileresource_saves_geopandas_loads(df, points, tmpfile):
     gdf = gpd.GeoDataFrame(df.assign(geometry=points))
 
-    target = ShapefileTarget(tmpfile)
-    target.save(gdf)
+    resource = Shapefile(tmpfile)
+    resource.save(gdf)
     loaded_gdf = gpd.read_file(tmpfile)
 
     _compare_dfs(gdf, loaded_gdf)
