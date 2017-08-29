@@ -1,13 +1,14 @@
 import os
 import pytest
 import tempfile
+import time
 
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 import shapely
 
-from resources import CSV, Shapefile, Bcolz, Pickle as Resource
+from resources import CSV, Shapefile, Bcolz, Pickle as Resource, cache
 
 
 @pytest.fixture
@@ -86,3 +87,55 @@ def test_shapefileresource_saves_geopandas_loads(df, points, tmpfile):
     loaded_gdf = gpd.read_file(tmpfile)
 
     _compare_dfs(gdf, loaded_gdf)
+
+
+def test_cache_saves_and_loads(df, tmpfile):
+    resource = Resource(tmpfile)
+
+    @cache(resource)
+    def process_df(df):
+        df2 = 10 * df
+        return df2
+
+    df2 = process_df(df)
+    df2_from_cache = process_df(df)
+
+    _compare_dfs(df2, df2_from_cache)
+
+
+def test_cache_works_faster_than_recomputing(df, tmpfile):
+    resource = Resource(tmpfile)
+    delay = 5
+
+    @cache(resource)
+    def process_df(df):
+        print("Make long computation")
+        time.sleep(delay)
+        df2 = 10 * df
+        return df2
+
+    t0 = time.time()
+    df2 = process_df(df)
+    t1 = time.time()
+    df2_from_cache = process_df(df)
+    t2 = time.time()
+
+    assert (t1 - t0) >= delay
+    assert (t1 - t0) > (t2 - t1)
+
+
+def test_cache_many_arg_func(df, tmpfile):
+    resource1 = Resource(tmpfile + '1')
+    resource2 = Resource(tmpfile + '2')
+
+    @cache(resource1, resource2)
+    def process_df(df):
+        df2 = 10 * df
+        df3 = 20 * df
+        return df2, df3
+
+    df2, df3 = process_df(df)
+    df2_from_cache, df3_from_cache = process_df(df)
+
+    _compare_dfs(df2, df2_from_cache)
+    _compare_dfs(df3, df3_from_cache)

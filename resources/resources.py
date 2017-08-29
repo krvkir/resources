@@ -71,17 +71,17 @@ def cache(*resources):
     def decorator(fn):
         def wrapped(*args, **kwargs):
             try:
-                results = (r.load() for r in resources)
-                if len(results) == 1:
-                    results = results[0]
+                results = [r.load() for r in resources]
                 logger.info("Loaded all from cache.")
             except:
                 logger.info("Cannot load from cache, evaluating.")
                 results = fn(*args, **kwargs)
-                if type(results) not in [tuple, list]:
-                    results = (results, )
+                if len(resources) == 1:
+                    results = [results]
                 for result, r in zip(results, resources):
                     r.save(result)
+            if len(resources) == 1:
+                results = results[0]
             return results
         return wrapped
     return decorator
