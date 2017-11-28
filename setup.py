@@ -17,10 +17,9 @@ config = {
     'url': '',
     'download_url': '',
 
-    'version': '0.1.dev1',
-    'install_requires': [
-        'pandas', 'geopandas', 'bcolz',
-        ],
+    'version': '0.1.dev2',
+    'install_requires': ['pandas', 'geopandas'],
+    'extras_require': ['bcolz'],
     'packages': find_packages(exclude=['docs', 'contrib', 'tests']),
     'scripts': [],
 }
