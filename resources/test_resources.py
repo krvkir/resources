@@ -1,6 +1,6 @@
 import os
 import pytest
-import tempfile
+from tempfile import NamedTemporaryFile
 import time
 
 import numpy as np
@@ -15,7 +15,7 @@ from resources import CSV, Shapefile, Bcolz, Pickle as Resource, cache
 def df():
     df = pd.DataFrame(np.random.rand(100, 5))
     # Convert RangeIndex to regular index and numbers to strings
-    df.columns = [str(i) for i in df.columns]
+    df.columns = ['column' + str(i) for i in df.columns]
     return df
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def points():
 
 @pytest.fixture
 def tmpfile():
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         name = f.name
     return name
 
@@ -89,6 +89,15 @@ def test_shapefileresource_saves_geopandas_loads(df, points, tmpfile):
     _compare_dfs(gdf, loaded_gdf)
 
 
+# def test_bcolzresource_saves_geodataframe(df, points, tmpfile):
+#     gdf = gpd.GeoDataFrame(df.assign(geometry=points))
+
+#     resource = Bcolz(tmpfile)
+#     resource.save(gdf)
+#     loaded_gdf = resource.load()
+
+#     _compare_dfs(gdf, loaded_gdf)
+
 def test_cache_saves_and_loads(df, tmpfile):
     resource = Resource(tmpfile)
 
@@ -101,6 +110,31 @@ def test_cache_saves_and_loads(df, tmpfile):
     df2_from_cache = process_df(df)
 
     _compare_dfs(df2, df2_from_cache)
+
+
+def test_cache_formatting_paths(df, tmpfile):
+    # Create resource template (path contains substitutions).
+    mult = 100
+    resource_tpl = Resource(tmpfile + '_{mult}')
+
+    # Define a function with parametrized cacher.
+    @cache(resource_tpl)
+    def process_df(df, mult):
+        df2 = mult * df
+        return df2
+
+    # Nothing changes in the resource template after function call.
+    df2 = process_df(df, mult)
+    assert resource_tpl.path.endswith('_{mult}')
+
+    # Cacher loads data from the parametrized cache.
+    df2_from_cache = process_df(df, mult)
+    _compare_dfs(df2, df2_from_cache)
+
+    # Handcrafted resource opens and contains the same data.
+    resource = Resource(tmpfile + '_{}'.format(mult))
+    df2_from_resource = resource.load()
+    _compare_dfs(df2, df2_from_resource)
 
 
 def test_cache_works_faster_than_recomputing(df, tmpfile):
@@ -139,3 +173,4 @@ def test_cache_many_arg_func(df, tmpfile):
 
     _compare_dfs(df2, df2_from_cache)
     _compare_dfs(df3, df3_from_cache)
+
