@@ -19,7 +19,7 @@ def _ensure_dir(f):
     return f
 
 
-class Resource(object):
+class Resource:
     """
     >>> resource = Resource('/path/to/file')
     >>> resource.path
@@ -91,7 +91,7 @@ class Bcolz(Resource):
         self._kwargs = kwargs
 
     def load(self):
-        return bcolz.ctable(rootdir=self._path, **self._kwargs)
+        return bcolz.ctable(rootdir=self._path, **self._kwargs).todataframe()
 
     def save(self, df):
         # Check the bcolz restriction on column names.
