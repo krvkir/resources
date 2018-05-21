@@ -2,6 +2,7 @@ import os
 import pytest
 from tempfile import NamedTemporaryFile
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -46,6 +47,15 @@ def _compare_dfs(df1, df2, eps=1e-12):
 
 
 def test_resource_save_load(df, tmpfile):
+    resource = Resource(tmpfile)
+    resource.save(df)
+    loaded_df = resource.load()
+
+    assert (df == loaded_df).values.all()
+
+
+def test_resource_save_load_to_pathlib_path(df, tmpfile):
+    tmpfile = Path(tmpfile)
     resource = Resource(tmpfile)
     resource.save(df)
     loaded_df = resource.load()
