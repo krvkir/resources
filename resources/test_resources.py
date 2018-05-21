@@ -112,7 +112,7 @@ def test_cache_saves_and_loads(df, tmpfile):
     _compare_dfs(df2, df2_from_cache)
 
 
-def test_cache_formatting_paths(df, tmpfile):
+def test_cache_formats_paths_from_function_args(df, tmpfile):
     # Create resource template (path contains substitutions).
     mult = 100
     resource_tpl = Resource(tmpfile + '_{mult}')
@@ -133,6 +133,35 @@ def test_cache_formatting_paths(df, tmpfile):
 
     # Handcrafted resource opens and contains the same data.
     resource = Resource(tmpfile + '_{}'.format(mult))
+    df2_from_resource = resource.load()
+    _compare_dfs(df2, df2_from_resource)
+
+
+def test_cache_formats_paths_from_object_properties(df, tmpfile):
+    # Create resource template (path contains substitutions).
+    add = 29
+    mult = 7
+
+    # Define class with a parameter.
+    class Processor:
+        def __init__(self, add):
+            self._add = add
+
+        # Define a method with a cacher parametrized by class's property.
+        @cache(Resource(tmpfile + '_{mult}_{self._add}'))
+        def process_df(self, df, mult):
+            df2 = mult * df + self._add
+            return df2
+
+    processor = Processor(add)
+
+    # Cacher loads data from the parametrized cache.
+    df2 = processor.process_df(df, mult)
+    df2_from_cache = processor.process_df(df, mult)
+    _compare_dfs(df2, df2_from_cache)
+
+    # Handcrafted resource opens and contains the same data.
+    resource = Resource(tmpfile + '_%s_%s' % (mult, add))
     df2_from_resource = resource.load()
     _compare_dfs(df2, df2_from_resource)
 

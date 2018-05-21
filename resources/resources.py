@@ -103,18 +103,31 @@ class Bcolz(Resource):
 
 def cache(*resources):
     """
-    Example 1:
+    If results of a function or a method weren't saved yet, save them into resource.
+    If they were, take them from the resource without computations.
+    Resource path can be parametrized with function args and/or class properties.
+
+    Example 1: Use directly.
     > cache(Bcolz('data/storage.bcolz'))(my_fn)(arg1, arg2, arg3)
 
-    Example 2:
+    Example 2: Use as a decorator.
     > @cache(Bcolz('data/storage.bcolz'))
     > def my_fn(arg1, arg2, arg3):
     >    calc_something_heavy(arg1, arg2, arg3)
+    >         ...
 
-    Example 3:
-    > @cache(Bcolz, path='data/{date}/storage.bcolz', args=['date', ])
+    Example 3: Use with parametrized resource.
+    > @cache(Bcolz('data/{date}/storage.bcolz')
     > def my_func(date, arg1, arg2, arg3):
     >     calc_something_heavy(date, arg1, arg2, arg3)
+    >         ...
+
+    Example 4: Use with a resource parametrized by object properties.
+    > class Processor:
+    >     _kind = 1
+    >     @cache(Bcolz('data/{self._kind}/{date}/storage.bcolz'))
+    >     def process(self, date):
+    >         ...
 
     """
 
