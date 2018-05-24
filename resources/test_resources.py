@@ -54,9 +54,13 @@ def test_resource_save_load(df, tmpfile):
     assert (df == loaded_df).values.all()
 
 
-def test_resource_save_load_to_pathlib_path(df, tmpfile):
-    tmpfile = Path(tmpfile)
-    resource = Resource(tmpfile)
+def test_invalid_filename(df, tmpfile):
+    resource = Resource(tmpfile + '_7:00.txt')
+    resource.save(df)
+
+
+def test_resource_creates_missing_dir(df, tmpfile):
+    resource = Resource(Path(tmpfile + '_') / 'abc')
     resource.save(df)
     loaded_df = resource.load()
 
@@ -174,6 +178,23 @@ def test_cache_formats_paths_from_object_properties(df, tmpfile):
     resource = Resource(tmpfile + '_%s_%s' % (mult, add))
     df2_from_resource = resource.load()
     _compare_dfs(df2, df2_from_resource)
+
+
+def test_resource_save_load_to_pathlib_path(df, tmpfile):
+    # Create resource template (path contains substitutions).
+    mult = 100
+    resource_tpl = Resource(Path(tmpfile) / 'file_{mult}')
+
+    # Define a function with parametrized cacher.
+    @cache(resource_tpl)
+    def process_df(df, mult):
+        df2 = mult * df
+        return df2
+
+    # Cacher loads data from the parametrized cache.
+    df2 = process_df(df, mult)
+    df2_from_cache = process_df(df, mult)
+    _compare_dfs(df2, df2_from_cache)
 
 
 def test_cache_works_faster_than_recomputing(df, tmpfile):

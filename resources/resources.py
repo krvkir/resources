@@ -26,11 +26,16 @@ class Resource:
     '/path/to/file'
     """
 
-    def __init__(self, path):
+    def __init__(self, path, **kwargs):
         self.path = path
+        self._kwargs = kwargs
 
-    def _get_path(self): return self._path
-    def _set_path(self, value): self._path = value
+    def _get_path(self):
+        return self._path
+
+    def _set_path(self, value):
+        self._path = value
+
     path = property(_get_path, _set_path, None, "Path to the resource")
 
     def load(self):
@@ -52,10 +57,6 @@ class Pickle(Resource):
 
 
 class CSV(Resource):
-    def __init__(self, path, **kwargs):
-        super(CSV, self).__init__(path)
-        self._kwargs = kwargs
-
     def load(self):
         return pd.read_csv(self._path, **self._kwargs)
 
@@ -69,10 +70,6 @@ class CSV(Resource):
 
 
 class Shapefile(Resource):
-    def __init__(self, path, **kwargs):
-        super(Shapefile, self).__init__(path)
-        self._kwargs = kwargs
-
     def load(self):
         return gpd.read_file(self._path, **self._kwargs)
 
@@ -86,12 +83,8 @@ class Shapefile(Resource):
 
 
 class Bcolz(Resource):
-    def __init__(self, path, **kwargs):
-        super(Bcolz, self).__init__(path)
-        self._kwargs = kwargs
-
     def load(self):
-        return bcolz.ctable(rootdir=self._path, **self._kwargs).todataframe()
+        return bcolz.ctable(rootdir=str(self._path), **self._kwargs).todataframe()
 
     def save(self, df):
         # Check the bcolz restriction on column names.
@@ -131,19 +124,19 @@ def cache(*resources):
 
     """
 
-    def decorator(raw_fn):
+    def decorator(orig_fn):
         def new_fn(*args, **kwargs):
             # Instantiate all resources which are not instantiated already.
             # Expand path templates with raw function arguments.
             # Prepare arguments.
-            argnames_of_raw_fn = tuple(signature(raw_fn).parameters.keys())
-            args_of_raw_fn = dict(zip(argnames_of_raw_fn[:len(args)], args))
-            args_of_raw_fn.update(kwargs)
+            argnames_of_orig_fn = tuple(signature(orig_fn).parameters.keys())
+            args_of_orig_fn = dict(zip(argnames_of_orig_fn[:len(args)], args))
+            args_of_orig_fn.update(kwargs)
             # Format resources paths if needed.
             resources_new = []
             for resource in resources:
-                path = resource.path.format(**args_of_raw_fn)
-                resource = type(resource)(path)
+                path = str(resource.path).format(**args_of_orig_fn)
+                resource = type(resource)(path, **resource._kwargs)
                 resources_new.append(resource)
 
             # Try to load raw function results from cached resources,
@@ -151,9 +144,12 @@ def cache(*resources):
             try:
                 results = [r.load() for r in resources_new]
                 logger.info("Loaded all from cache.")
+            # except OSError as e:
+            #     logger.critical("Possibly invalid filename for the resource.")
+            #     raise e
             except:
                 logger.info("Cannot load from cache, evaluating.")
-                results = raw_fn(*args, **kwargs)
+                results = orig_fn(*args, **kwargs)
                 if len(resources_new) == 1:
                     results = [results]
                 for result, r in zip(results, resources_new):
