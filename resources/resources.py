@@ -47,28 +47,43 @@ class Resource:
     path = property(_get_path, _set_path, None, "Path to the resource")
 
     def load(self):
-        raise NotImplemented
+        df = self._load()
+        logger.info(f"{self.path} loaded.")
+        return df
 
     def save(self, df):
+        self._save(df)
+        logger.info(f"{self.path} saved.")
+
+    def _load(self):
+        """ This should load data and return the result.
+        See reference implementation in class `Pickle`.
+        """
+        raise NotImplemented
+
+    def _save(self, df):
+        """ This should save data.
+        See reference implementation in class `Pickle`.
+        """
         raise NotImplemented
 
 
 class Pickle(Resource):
-    def load(self):
+    def _load(self):
         with open(self._path, 'rb') as f:
             df = pickle.load(f)
         return df
 
-    def save(self, df):
+    def _save(self, df):
         with open(_ensure_dir(self._path), 'wb') as f:
             pickle.dump(df, f)
 
 
 class CSV(Resource):
-    def load(self):
+    def _load(self):
         return pd.read_csv(self._path, **self._kwargs)
 
-    def save(self, df):
+    def _save(self, df):
         if df.index.name is not None:
             logger.warning(
                 "You are saving dataframe with non-trivial index. "
@@ -78,10 +93,10 @@ class CSV(Resource):
 
 
 class Shapefile(Resource):
-    def load(self):
+    def _load(self):
         return gpd.read_file(self._path, **self._kwargs)
 
-    def save(self, df):
+    def _save(self, df):
         if df.index.name is not None:
             logger.warning(
                 "You are saving dataframe with non-trivial index. "
@@ -91,10 +106,10 @@ class Shapefile(Resource):
 
 
 class Bcolz(Resource):
-    def load(self):
+    def _load(self):
         return bcolz.ctable(rootdir=str(self._path), **self._kwargs).todataframe()
 
-    def save(self, df):
+    def _save(self, df):
         # Check the bcolz restriction on column names.
         assert all(type(s) == str and s.isidentifier() for s in df.columns)
         # Dump data to the disk.
