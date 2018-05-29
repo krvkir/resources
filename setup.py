@@ -19,7 +19,7 @@ config = {
 
     'version': '0.1.dev2',
     'install_requires': ['pandas', 'geopandas'],
-    'extras_require': ['bcolz'],
+    'extras_require': {'Use Bcolz archived columnar storage': 'bcolz'},
     'packages': find_packages(exclude=['docs', 'contrib', 'tests']),
     'scripts': [],
 }

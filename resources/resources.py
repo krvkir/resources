@@ -1,15 +1,23 @@
 import os
 import pickle
 import logging
-from collections import Container
 from inspect import signature
 
 import pandas as pd
-import bcolz
 
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.INFO)
+
+
+try:
+    import geopandas as gpd
+except ImportError:
+    logger.info("Can't import `geopandas`, Shapefile resource won't be available.")
+try:
+    import bcolz
+except ImportError:
+    logger.info("Can't import `bcolz`, Bcolz resource won't be available.")
 
 
 def _ensure_dir(f):
